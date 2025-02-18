@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "798237308400",
+    "project_id": "emergency-alert-cfa28",
+    "storage_bucket": "emergency-alert-cfa28.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:798237308400:android:33e1ef5ac7aeb650a81935",
+        "android_client_info": {
+          "package_name": "com.example.alert_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJz2ZbL3AoaDBz9-YuKq5p9QSxH7TKwJs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
