@@ -46,6 +46,8 @@ dependencies:
   image_picker: ^1.1.2
   flutter_contacts: ^1.1.9+2
   flutter_background_messenger: ^0.0.2
+  logger: ^2.5.0
+  email_validator: ^3.0.0
 
 
 dev_dependencies:
