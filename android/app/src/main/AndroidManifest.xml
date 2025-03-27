@@ -16,6 +16,14 @@
         android:label="alert_system"
         android:name="android.app.Application"
         android:icon="@mipmap/ic_launcher">
+
+
+    <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="AIzaSyD_tOVRfjpFB0fztSRKEuacNcFVHMj4Kn8"/>
+
+
+
     <activity
         android:name=".MainActivity"
         android:exported="true"
@@ -30,6 +38,7 @@
             android:name="io.flutter.embedding.android.NormalTheme"
             android:resource="@style/NormalTheme"
             />
+
         <intent-filter>
             <action android:name="android.intent.action.MAIN"/>
             <category android:name="android.intent.category.LAUNCHER"/>

@@ -30,14 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
   late List<Map<String, dynamic>> quickActions;
   final FlutterBackgroundMessenger messenger = FlutterBackgroundMessenger();
 
-
   final List<Widget> _screens = [
-  NearPoliceStation(),
-  LocationScreen(),
-  ChatbotScreen(),
-  UserProfile(),
-];
-
+    NearPoliceStation(),
+    LocationScreen(),
+    ChatbotScreen(),
+    UserProfile(),
+  ];
 
   @override
   void initState() {
@@ -78,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         userId = user.uid;
       });
-      //await _getUserData(user.uid);
+      await _getUserData(user.uid);
       await _checkAndRequestPermissions();
     }
   }
@@ -91,49 +89,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return status.isGranted;
   }
 
-//   Future<void> _getUserData(String uid) async {
-//   try {
-//     DocumentSnapshot userDoc =
-//         await FirebaseFirestore.instance.collection('users').doc(uid).get();
+  Future<void> _getUserData(String uid) async {
+    try {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users') // Ensure this collection exists in Firestore
+          .doc(uid)
+          .get();
 
-//     if (userDoc.exists) {
-//       setState(() {
-//         userData = userDoc.data() as Map<String, dynamic>?;
-
-//         username = userData?['name'] ?? 'Anonymous';
-//         location = userData?['location'] ?? 'Fetching location...';
-
-//         _screens = [
-//           NearPoliceStation(),
-//           LocationScreen(),
-//           ChatbotScreen(),
-//           ProfileScreen(
-//             username: userData?['username'] ?? '',
-//             location: userData?['location'] ?? '',
-//             mobileNumber: userData?['mobileNumber'] ?? '',
-//             email: userData?['email'] ?? '',
-//             age: userData?['age'] ?? '',
-//             gender: userData?['gender'] ?? '',
-//             profileImage: userData?['profileImage'] ?? '',
-//             initialEmergencyContacts: List<Map<String, String>>.from(userData?['emergencyContacts'] ?? []),
-//           ),
-//         ];  
-//       });
-//     } else {
-//       setState(() {
-//         username = 'User not found';
-//         location = 'Location not available';
-//       });
-//     }
-//   } catch (e) {
-//     print("Error fetching user data: $e");
-//     setState(() {
-//       username = 'Error loading username';
-//       location = 'Error loading location';
-//     });
-//   }
-// }
-
+      if (userDoc.exists) {
+        setState(() {
+          username = userDoc['username'] ??
+              "Unknown User"; // Ensure 'name' exists in Firestore
+        });
+        print("✅ Username fetched: $username");
+      } else {
+        print("⚠️ User document does not exist.");
+      }
+    } catch (e) {
+      print("⚠️ Error fetching user data: $e");
+    }
+  }
 
   Future<void> _checkAndRequestPermissions() async {
     if (await Permission.location.request().isGranted) {
@@ -145,40 +120,38 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
- Future<void> _getUserLocation() async {
-  try {
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      _currentPosition = position;
-    });
+  Future<void> _getUserLocation() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _currentPosition = position;
+      });
 
-    _updateUserLocation(position);
-    
-    // Get location name including colony and city
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude, position.longitude);
-    Placemark place = placemarks.isNotEmpty ? placemarks.first : Placemark();
+      _updateUserLocation(position);
 
-    String colony = place.subLocality ?? "Unknown Colony";
-    String city = place.locality ?? "Unknown City";
+      // Get location name including colony and city
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+      Placemark place = placemarks.isNotEmpty ? placemarks.first : Placemark();
 
-    String locationDetail = "$colony, $city"; // Format: "Colony, City"
+      String colony = place.subLocality ?? "Unknown Colony";
+      String city = place.locality ?? "Unknown City";
 
-    setState(() {
-      location = locationDetail;  // Store colony and city name
-    });
+      String locationDetail = "$colony, $city"; // Format: "Colony, City"
 
-    //log.i("📍 Location: $locationDetail"); // Log location
-  } catch (e) {
-    print("Error fetching location: $e");
-    setState(() {
-      location = "Unable to get location";
-    });
+      setState(() {
+        location = locationDetail; // Store colony and city name
+      });
+
+      //log.i("📍 Location: $locationDetail"); // Log location
+    } catch (e) {
+      print("Error fetching location: $e");
+      setState(() {
+        location = "Unable to get location";
+      });
+    }
   }
-}
-
-
 
   Future<void> _updateUserLocation(Position position) async {
     try {
@@ -381,7 +354,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return true;
   }
 
-  
   void _onTabSelected(int index) {
     setState(() {
       _currentIndex = index;
@@ -402,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
     quickActions[index]['action']?.call();
   }
 
-    @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -415,14 +387,17 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 30),
-                UserInfoHeader(username: username, location:location),
+                UserInfoHeader(username: username, location: location),
                 const SizedBox(height: 40),
                 Center(
                   child: Column(
                     children: [
                       Text(
                         "Emergency Help Needed?",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87),
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
@@ -443,7 +418,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 20,
                       mainAxisSpacing: 20,
@@ -482,9 +458,11 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           // Modify this for any required FAB action
           Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen()), // Replace with actual screen
-    );
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    HomeScreen()), // Replace with actual screen
+          );
         },
         child: Icon(Icons.add),
       ),
