@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:alert_system/UI/auth/login_screen.dart';
 import 'package:alert_system/UI/register_page.dart';
 import 'package:alert_system/firebase_options.dart';
-import 'package:firebase_auth/firebase_auth.dart';  // Import FirebaseAuth for user session check
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:alert_system/UI/landing_page.dart'; // Import the Landing Page
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,11 +29,12 @@ class MyApp extends StatelessWidget {
           foregroundColor: Colors.white,
         ),
       ),
-      initialRoute: FirebaseAuth.instance.currentUser == null ? '/login' : '/home', // Check if the user is logged in
+      initialRoute: '/landing', // Set LandingPage as the initial route
       routes: {
+        '/landing': (context) => LandingPage(),
         '/register': (context) => const RegisterPage(),
         '/login': (context) => const LoginPage(),
-        '/home': (context) => HomeScreen(), // HomeScreen if user is logged in
+        '/home': (context) => HomeScreen(),
       },
     );
   }
