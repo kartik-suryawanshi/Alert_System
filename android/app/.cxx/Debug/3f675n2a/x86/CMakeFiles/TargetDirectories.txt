@@ -1,0 +1,2 @@
+E:/Project1/Alert_System/android/app/.cxx/Debug/3f675n2a/x86/CMakeFiles/edit_cache.dir
+E:/Project1/Alert_System/android/app/.cxx/Debug/3f675n2a/x86/CMakeFiles/rebuild_cache.dir

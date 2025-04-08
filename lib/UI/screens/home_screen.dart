@@ -2,6 +2,7 @@ import 'package:alert_system/UI/screens/chatbot_screen.dart';
 import 'package:alert_system/UI/screens/location_screen.dart';
 import 'package:alert_system/UI/screens/near_police_station.dart';
 import 'package:alert_system/UI/screens/profile_screen.dart';
+import 'package:alert_system/UI/screens/feedback_screen.dart'; // New import
 import 'package:alert_system/widgets/quick_action_card.dart';
 import 'package:alert_system/widgets/user_info_header.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -33,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     NearPoliceStation(),
     LocationScreen(),
-    ChatbotScreen(),
+    ChatBotScreen(),
     UserProfile(),
   ];
 
@@ -59,13 +60,24 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Nearby Help',
         'icon': Icons.people_alt,
         'color': Colors.blue,
-        'action': () => _triggerActionWithAnimation(2),
+        'action': () => _notifyNearbyUsers(),
       },
       {
         'title': 'Alert Friends',
         'icon': Icons.notifications,
         'color': Colors.green,
-        'action': () => _triggerActionWithAnimation(3),
+        'action': () => _alertFriends(context),
+      },
+      {
+        'title': 'Feedback',
+        'icon': Icons.feedback,
+        'color': Colors.purple,
+        'action': () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => FeedbackScreen()),
+          );
+        },
       },
     ];
   }
@@ -92,18 +104,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _getUserData(String uid) async {
     try {
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users') // Ensure this collection exists in Firestore
+          .collection('users')
           .doc(uid)
           .get();
 
       if (userDoc.exists) {
         setState(() {
-          username = userDoc['username'] ??
-              "Unknown User"; // Ensure 'name' exists in Firestore
+          username = userDoc['username'] ?? "Unknown User";
         });
-        print("✅ Username fetched: $username");
-      } else {
-        print("⚠️ User document does not exist.");
       }
     } catch (e) {
       print("⚠️ Error fetching user data: $e");
@@ -130,23 +138,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
       _updateUserLocation(position);
 
-      // Get location name including colony and city
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(position.latitude, position.longitude);
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, position.longitude);
       Placemark place = placemarks.isNotEmpty ? placemarks.first : Placemark();
-
       String colony = place.subLocality ?? "Unknown Colony";
       String city = place.locality ?? "Unknown City";
 
-      String locationDetail = "$colony, $city"; // Format: "Colony, City"
-
       setState(() {
-        location = locationDetail; // Store colony and city name
+        location = "$colony, $city";
       });
-
-      //log.i("📍 Location: $locationDetail"); // Log location
     } catch (e) {
-      print("Error fetching location: $e");
       setState(() {
         location = "Unable to get location";
       });
@@ -156,32 +157,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _updateUserLocation(Position position) async {
     try {
       if (userId.isNotEmpty) {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .update({
+        await FirebaseFirestore.instance.collection('users').doc(userId).update({
           'latitude': position.latitude,
           'longitude': position.longitude,
         });
       }
     } catch (e) {
       print("Error updating location in Firestore: $e");
-    }
-  }
-
-  Future<void> _getLocationName(double latitude, double longitude) async {
-    try {
-      List<Placemark> placemarks =
-          await placemarkFromCoordinates(latitude, longitude);
-      Placemark place = placemarks[0];
-      setState(() {
-        location = "${place.locality}, ${place.country}";
-      });
-    } catch (e) {
-      print("Error fetching location name: $e");
-      setState(() {
-        location = "Unknown location";
-      });
     }
   }
 
@@ -197,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
     double longitude = _currentPosition!.longitude;
 
     QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('users').get();
+    await FirebaseFirestore.instance.collection('users').get();
 
     List<String> nearbyUserTokens = [];
 
@@ -212,8 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
         double userLat = userData['latitude'];
         double userLon = userData['longitude'];
 
-        double distance =
-            Geolocator.distanceBetween(latitude, longitude, userLat, userLon);
+        double distance = Geolocator.distanceBetween(
+            latitude, longitude, userLat, userLon);
 
         if (distance <= 1000) {
           String? token = userData['fcmToken'];
@@ -222,13 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         }
       }
-    }
-
-    if (nearbyUserTokens.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("No nearby users found.")),
-      );
-      return;
     }
 
     String alertMessage =
@@ -252,7 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _alertFriends(BuildContext context) async {
-    // Check for SMS permissions
     bool smsPermission = await _checkAndRequestSMSPermission();
     if (!smsPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -261,7 +235,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // Check for location permissions
     bool locationPermission = await _checkLocationPermission();
     if (!locationPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -271,7 +244,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      // Get the current location
       Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
       String googleMapsUrl =
@@ -279,78 +251,58 @@ class _HomeScreenState extends State<HomeScreen> {
       String message =
           "🚨 Emergency Alert! 🚨\nI am in danger! Please help me.\nMy location: $googleMapsUrl";
 
-      // Fetch the user's emergency contacts from Firestore
       DocumentSnapshot userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .get();
       List<dynamic> emergencyContacts = userDoc['emergencyContacts'] ?? [];
 
-      // Check if there are any emergency contacts
       if (emergencyContacts.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('No emergency contacts found in your profile.')),
+          SnackBar(content: Text('No emergency contacts found.')),
         );
         return;
       }
 
-      // Iterate through the emergency contacts and send SMS
       bool allSmsSent = true;
       for (var contact in emergencyContacts) {
         String number = contact['number']?.toString() ?? '';
-        if (number.isEmpty) {
-          print("Invalid phone number for contact: $contact");
-          allSmsSent = false;
-          continue;
-        }
+        if (number.isEmpty) continue;
+
         try {
           await messenger.sendSMS(phoneNumber: number, message: message);
-          print("SMS sent to $number");
         } catch (e) {
           print("Failed to send SMS to $number: $e");
           allSmsSent = false;
         }
       }
 
-      // Show a SnackBar based on the success or failure of SMS sending
       if (allSmsSent) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Emergency alert sent successfully!')),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Some alerts failed to send. Please check your contacts.')),
+          SnackBar(content: Text('Some alerts failed to send.')),
         );
       }
     } catch (e) {
       print("Error sending alert: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to send alert. Please try again.')),
-      );
     }
   }
 
   Future<bool> _checkLocationPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return false;
-    }
+    if (!serviceEnabled) return false;
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         return false;
       }
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      return false;
-    }
-
     return true;
   }
 
@@ -382,7 +334,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            // Home Screen with Emergency Section & Grid
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -418,8 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 20,
                       mainAxisSpacing: 20,
@@ -445,23 +395,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            // Other Screens
-            NearPoliceStation(),
-            LocationScreen(),
-            ChatbotScreen(),
-            UserProfile(),
+            ..._screens,
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.orange,
         onPressed: () {
-          // Modify this for any required FAB action
           Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    HomeScreen()), // Replace with actual screen
+            MaterialPageRoute(builder: (context) => HomeScreen()),
           );
         },
         child: Icon(Icons.add),
